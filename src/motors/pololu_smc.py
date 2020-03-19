@@ -13,7 +13,7 @@ class PololuSimpleMotor(MotorWrapper):
     def set_speed(self, speed):
         # Scale to (-3200 to 3200).
         speed = speed * 32
-        
+
         cmd = 0x85  # Motor forward
         if speed < 0:
             cmd = 0x86  # Motor reverse
@@ -31,13 +31,14 @@ class PololuSimpleConnection(ConnectionWrapper):
         self.port = config.get('port')
         self.baudrate = config.get('baudrate')
         self.device_number = config.get('device_number')
+        self.connection = serial.Serial(self.port, self.baud_rate, timeout=0.1, write_timeout=0.1)
 
     def send_command(self, cmd, *data_bytes):
         if self.device_number == None:
             header = [cmd]  # Compact protocol
         else:
             header = [0xAA, self.device_number, cmd & 0x7F]  # Pololu protocol
-        self.port.write(bytes(header + list(data_bytes)))
+        self.connection.write(bytes(header + list(data_bytes)))
 
     # Sends the Exit Safe Start command, which is required to drive the motor.
     def exit_safe_start(self):
@@ -46,7 +47,7 @@ class PololuSimpleConnection(ConnectionWrapper):
     # Gets the specified variable as an unsigned value.
     def get_variable(self, id):
         self.send_command(0xA1, id)
-        result = self.port.read(2)
+        result = self.connection.read(2)
         if len(result) != 2:
             raise RuntimeError("Expected to read 2 bytes, got {}.".format(len(result)))
         b = bytearray(result)
