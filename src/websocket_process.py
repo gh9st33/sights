@@ -26,6 +26,9 @@ class WebSocketProcess (multiprocessing.Process):
         # Get nice name (e.g. "SensorStream")
         self.name = self.__class__.__name__
 
+    async def main(self):
+        pass
+
     def run(self):
         self.logger.info("Starting " + self.name + " process at " + self.ip + ":" + str(self.port))
         # Start the WebSocket server, run the main() function

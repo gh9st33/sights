@@ -12,10 +12,10 @@ class SabertoothMotor(MotorWrapper):
 
     def set_speed(self, speed):
         if (self.channel == 1):
-            msg = 64 + round(63 / 100 * max(min(left, 100), -100))
+            msg = 64 + round(63 / 100 * max(min(speed, 100), -100))
             self.serial.write(bytes([msg]))
         elif (self.channel == 2):
-            msg = 192 + round(63 / 100 * max(min(left, 100), -100))
+            msg = 192 + round(63 / 100 * max(min(speed, 100), -100))
             self.serial.write(bytes([msg]))
 
 
