@@ -163,23 +163,31 @@ class ControlReceiver(WebSocketProcess):
         typ = msg["type"]  # axis, button, or keyboard
         control = msg["control"]  # FACE_0, LEFT_STICK_Y, SPEED_UP etc.
 
-        if typ == "KEYBOARD":
-            value = msg["value"] if "value" in msg else False  # UP, DOWN
-            # Handle directional movement etc
-            self.keyboard_handler(control, value)
-        elif typ == "SLIDER":
-            value = int(msg["value"])
-            self.logger.info("Slider value type is {}".format(type(value)))
-            self.servos.go_to_pos_async(int(self.config["arm"][control]), value)
+        if typ == "AXIS":
+            # If axis, store as float
+            value = float(msg["value"])
+            # Update state with new value of axis
+            self.state[control] = value
+            # Handle trigger and stick controls
+            if control in ["LEFT_STICK_X", "LEFT_STICK_Y"]:
+                self.gamepad_movement_handler(type="STICK")
+            else:
+                self.gamepad_movement_handler(type="TRIGGER")
+
         elif typ == "BUTTON":
             value = msg["value"]  # UP, DOWN
             # Store in state, because it might be useful (e.g. for modifiers)
-            self.state[control] = True if value == "DOWN" else False
-            # 
-            if control == "LEFT_TOP_SHOULDER" or control == "RIGHT_TOP_SHOULDER":
+            self.state[control] = value == "DOWN"
+            #
+            if control in ["LEFT_TOP_SHOULDER", "RIGHT_TOP_SHOULDER"]:
                 self.gamepad_movement_handler(type="TRIGGER")
             # Then handle any button events
-            if control == "DPAD_LEFT":
+            if control == "DPAD_DOWN":
+                if value == "DOWN":
+                    self.keyboard_handler("PADDLE_REVERSE", self.motors.speed)
+                elif value == "UP":
+                    self.motors.stop_paddle()
+            elif control == "DPAD_LEFT":
                 if value == "DOWN":
                     self.motors.speed = min(1023, self.motors.speed + 128)
                     self.pipe.send(["SYNC_SPEED", self.motors.speed])
@@ -192,21 +200,14 @@ class ControlReceiver(WebSocketProcess):
                     self.keyboard_handler("PADDLE_FORWARD", self.motors.speed)
                 elif value == "UP":
                     self.motors.stop_paddle()
-            elif control == "DPAD_DOWN":
-                if value == "DOWN":
-                    self.keyboard_handler("PADDLE_REVERSE", self.motors.speed)
-                elif value == "UP":
-                    self.motors.stop_paddle()
-        elif typ == "AXIS":
-            # If axis, store as float
-            value = float(msg["value"])
-            # Update state with new value of axis
-            self.state[control] = value
-            # Handle trigger and stick controls
-            if control == "LEFT_STICK_X" or control == "LEFT_STICK_Y":
-                self.gamepad_movement_handler(type="STICK")
-            else:
-                self.gamepad_movement_handler(type="TRIGGER")
+        elif typ == "KEYBOARD":
+            value = msg["value"] if "value" in msg else False  # UP, DOWN
+            # Handle directional movement etc
+            self.keyboard_handler(control, value)
+        elif typ == "SLIDER":
+            value = int(msg["value"])
+            self.logger.info(f"Slider value type is {type(value)}")
+            self.servos.go_to_pos_async(int(self.config["arm"][control]), value)
 
     def get_initial_messages(self):
         return self.servos.get_initial_messages()

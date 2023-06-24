@@ -16,10 +16,8 @@ class MultiRandomWrapper(SensorWrapper):
         self.max_c = int(config.get('max_c', 30))
 
     def get_data(self):
-        msg = {
+        return {
             "a": random.randint(self.min_a, self.max_a),
             "b": random.randint(self.min_b, self.max_b),
-            "c": random.randint(self.min_c, self.max_c)
+            "c": random.randint(self.min_c, self.max_c),
         }
-
-        return msg

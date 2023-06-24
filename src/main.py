@@ -58,10 +58,9 @@ if __name__ == '__main__':
     # Get active config from ACTIVE_CONFIG file
     try:
         with open("configs/ACTIVE_CONFIG", 'r') as f:
-            config_file = "configs/" + f.read()
+            config_file = f"configs/{f.read()}"
             # Load config file
             config = json.load(open(config_file))
-    # Otherwise fallback to minimal.json
     except FileNotFoundError:
         config_file = "src/configs/sights/minimal.json"
         config = json.load(open(config_file))

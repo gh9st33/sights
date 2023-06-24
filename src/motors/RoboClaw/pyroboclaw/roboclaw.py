@@ -33,7 +33,7 @@ class CRCCCITT(object):
             if not len(self.crc_ccitt_tab):
                 self.init_crc_ccitt()
         except Exception as e:
-            print("EXCEPTION(calculate): {}".format(e))
+            print(f"EXCEPTION(calculate): {e}")
 
     def calculate(self, input_data=None):
         try:
@@ -54,7 +54,7 @@ class CRCCCITT(object):
 
             return crcValue
         except Exception as e:
-            print("EXCEPTION(calculate): {}".format(e))
+            print(f"EXCEPTION(calculate): {e}")
 
     def init_crc_ccitt(self):
         '''The algorithm uses tables with precalculated values'''
@@ -62,12 +62,12 @@ class CRCCCITT(object):
             crc = 0
             c = i << 8
 
-            for j in range(0, 8):
-                if ((crc ^ c) & 0x8000):
-                    crc = c_ushort(crc << 1).value ^ self.crc_ccitt_constant
-                else:
-                    crc = c_ushort(crc << 1).value
-
+            for _ in range(0, 8):
+                crc = (
+                    c_ushort(crc << 1).value ^ self.crc_ccitt_constant
+                    if ((crc ^ c) & 0x8000)
+                    else c_ushort(crc << 1).value
+                )
                 c = c_ushort(c << 1).value  # equivalent of c = c << 1
             self.crc_ccitt_tab.append(hex(crc))
 
@@ -118,7 +118,7 @@ class RoboClaw:
                 self.port.write(cmd_bytes + data_bytes + crc_bytes)
                 self.port.flush()
                 verification = self.port.read(1)
-            if 0xff != struct.unpack('>B', verification)[0]:
+            if struct.unpack('>B', verification)[0] != 0xFF:
                 logger.error('write crc failed')
                 raise CRCException('CRC failed')
         except serial.serialutil.SerialException:
@@ -129,10 +129,7 @@ class RoboClaw:
                 raise
 
     def set_speed(self, motor, speed):
-        if motor == 1:
-            cmd = Cmd.M1SPEED
-        else:
-            cmd = Cmd.M2SPEED
+        cmd = Cmd.M1SPEED if motor == 1 else Cmd.M2SPEED
         self._write(cmd, '>i', speed)
 
     def recover_serial(self):
@@ -147,10 +144,7 @@ class RoboClaw:
 
     def drive_to_position_raw(self, motor, accel, speed, deccel, position, buffer):
         # drive to a position expressed as a percentage of the full range of the motor
-        if motor == 1:
-            cmd = Cmd.M1SPEEDACCELDECCELPOS
-        else:
-            cmd = Cmd.M2SPEEDACCELDECCELPOS
+        cmd = Cmd.M1SPEEDACCELDECCELPOS if motor == 1 else Cmd.M2SPEEDACCELDECCELPOS
         self._write(cmd, '>IiIiB', accel, speed, deccel, position, buffer)
 
     def drive_to_position(self, motor, accel, speed, deccel, position, buffer):
@@ -168,10 +162,7 @@ class RoboClaw:
     def drive_motor(self, motor, speed):
         # assert -64 <= speed <= 63
         write_speed = speed + 64
-        if motor == 1:
-            cmd = Cmd.M17BIT
-        else:
-            cmd = Cmd.M27BIT
+        cmd = Cmd.M17BIT if motor == 1 else Cmd.M27BIT
         self._write(cmd, '>B', write_speed)
 
     def stop_motor(self, motor):
@@ -186,10 +177,7 @@ class RoboClaw:
 
     def read_encoder(self, motor):
         # Currently, this function doesn't check over/underflow, which is fine since we're using pots.
-        if motor == 1:
-            cmd = Cmd.GETM1ENC
-        else:
-            cmd = Cmd.GETM2ENC
+        cmd = Cmd.GETM1ENC if motor == 1 else Cmd.GETM2ENC
         return self._read(cmd, '>IB')[0]
 
     def reset_quad_encoders(self):
@@ -197,10 +185,7 @@ class RoboClaw:
         self._write(Cmd.SETM2ENCCOUNT, '>I', 0)
 
     def read_range(self, motor):
-        if motor == 1:
-            cmd = Cmd.READM1POSPID
-        else:
-            cmd = Cmd.READM2POSPID
+        cmd = Cmd.READM1POSPID if motor == 1 else Cmd.READM2POSPID
         pid_vals = self._read(cmd, '>IIIIIii')
         return pid_vals[5], pid_vals[6]
 
@@ -234,17 +219,11 @@ class RoboClaw:
         }.get(status, 'Unknown Error')
 
     def read_temp_sensor(self, sensor):
-        if sensor == 1:
-            cmd = Cmd.GETTEMP
-        else:
-            cmd = Cmd.GETTEMP2
+        cmd = Cmd.GETTEMP if sensor == 1 else Cmd.GETTEMP2
         return self._read(cmd, '>H')[0] / 10
 
     def read_batt_voltage(self, battery):
-        if battery in ['logic', 'Logic', 'L', 'l']:
-            cmd = Cmd.GETLBATT
-        else:
-            cmd = Cmd.GETMBATT
+        cmd = Cmd.GETLBATT if battery in ['logic', 'Logic', 'L', 'l'] else Cmd.GETMBATT
         return self._read(cmd, '>H')[0] / 10
 
     def read_voltages(self):
@@ -254,23 +233,17 @@ class RoboClaw:
 
     def read_currents(self):
         currents = self._read(Cmd.GETCURRENTS, '>hh')
-        return tuple([c / 100. for c in currents])
+        return tuple(c / 100. for c in currents)
 
     def read_motor_current(self, motor):
-        if motor == 1:
-            return self.read_currents()[0]
-        else:
-            return self.read_currents()[1]
+        return self.read_currents()[0] if motor == 1 else self.read_currents()[1]
 
     def read_motor_pwms(self):
         pwms = self._read(Cmd.GETPWMS, '>hh')
-        return tuple([c / 327.67 for c in pwms])
+        return tuple(c / 327.67 for c in pwms)
 
     def read_motor_pwm(self, motor):
-        if motor == 1:
-            return self.read_motor_pwms()[0]
-        else:
-            return self.read_motor_pwms()[1]
+        return self.read_motor_pwms()[0] if motor == 1 else self.read_motor_pwms()[1]
 
     def read_input_pin_modes(self):
         modes = self._read(Cmd.GETPINFUNCTIONS, '>BBB')
@@ -297,18 +270,12 @@ class RoboClaw:
         return s3_mode, s4_mode, s5_mode
 
     def read_max_speed(self, motor):
-        if motor == 1:
-            cmd = Cmd.READM1PID
-        else:
-            cmd = Cmd.READM2PID
+        cmd = Cmd.READM1PID if motor == 1 else Cmd.READM2PID
         return self._read(cmd, '>IIII')[3]
 
     def read_speed(self, motor):
         # returns velocity as a percentage of max speed
-        if motor == 1:
-            cmd = Cmd.GETM1SPEED
-        else:
-            cmd = Cmd.GETM2SPEED
+        cmd = Cmd.GETM1SPEED if motor == 1 else Cmd.GETM2SPEED
         max_speed = self.read_max_speed(motor)
         speed_vals = self._read(cmd, '>IB')
         speed = (speed_vals[0] / max_speed) * 100.

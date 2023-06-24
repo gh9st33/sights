@@ -136,5 +136,4 @@ class RoboteqHandler:
 
     def read_value(self, command: str = "", parameter = "") -> str:
         request = f"{command} [{parameter}]"
-        response = self.request_handler(request)
-        return response
+        return self.request_handler(request)

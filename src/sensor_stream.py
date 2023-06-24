@@ -25,7 +25,7 @@ class SensorStream(WebSocketProcess):
         self.logger = logging.getLogger(__name__)
 
         # Create new plugin manager looking for subclasses of SensorWrapper in "src/sensors/"
-        self.pm = PluginManager(SensorWrapper, os.getcwd() + "/src/sensors")
+        self.pm = PluginManager(SensorWrapper, f"{os.getcwd()}/src/sensors")
 
         # Save any messages to send in first message to websock
         self.init_msgs = init_msgs
@@ -90,7 +90,7 @@ class SensorStream(WebSocketProcess):
     async def send_pos_value(self, target, value):
         msg = {"arm_position": [{"target": target, "position": value}]}
         await self.websocket.send(json.dumps(msg))
-        self.logger.debug("Synchronised {} position".format(target))
+        self.logger.debug(f"Synchronised {target} position")
 
     async def send_speed_value(self, speed):
         # Create message with type and value of the speed
@@ -104,9 +104,7 @@ class SensorStream(WebSocketProcess):
         if self.init_msgs is not None:
             for message in self.init_msgs:
                 if message == "SERVO_POS":
-                    pos = []
-                    for sp in self.init_msgs[message]:
-                        pos.append({"target": sp[0], "position": sp[1]})
+                    pos = [{"target": sp[0], "position": sp[1]} for sp in self.init_msgs[message]]
                     msg["arm_position"] = pos
 
         msg["initial_message"] = True
