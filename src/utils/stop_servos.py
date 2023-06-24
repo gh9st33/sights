@@ -22,7 +22,7 @@ if not devices:
 # For each USB2AX
 for dev in devices:
     # Get full path to serial port
-    port = "/dev/serial/by-id/" + dev
+    port = f"/dev/serial/by-id/{dev}"
     # Print message to console
     print("Attempting to connect to", port)
     # Open connection

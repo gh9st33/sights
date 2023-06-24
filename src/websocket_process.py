@@ -22,17 +22,14 @@ class WebSocketProcess(multiprocessing.Process):
         # WebSocket port (e.g. 5555)
         self.port = port
         # Bind to specified IP address, if provided, otherwise bind to any address
-        if 'network' in self.config:
-            self.ip = self.config['network']['ip']
-        else:
-            self.ip = '*'
+        self.ip = self.config['network']['ip'] if 'network' in self.config else '*'
         # Get nice name (e.g. "SensorStream")
         self.name = self.__class__.__name__
 
     def run(self):
-        self.logger.info("Starting " + self.name + " process at " + self.ip + ":" + str(self.port))
+        self.logger.info(f"Starting {self.name} process at {self.ip}:{str(self.port)}")
         # Start the WebSocket server, run the main() function
         start_server = websockets.serve(self.main, self.ip, self.port)
         asyncio.get_event_loop().run_until_complete(start_server)
         asyncio.get_event_loop().run_forever()
-        self.logger.info("Exiting " + self.name + " process")
+        self.logger.info(f"Exiting {self.name} process")

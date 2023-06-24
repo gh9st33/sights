@@ -18,10 +18,8 @@ class MaestroConnection(ServoWrapper):
         self.logger = logging.getLogger()
 
     def getPos(self, angle):
-        if angle > 90:
-            angle = 90
-        if angle < -90:
-            angle = -90
+        angle = min(angle, 90)
+        angle = max(angle, -90)
         return self.CENTRE + int(self.RANGE * angle / 90)
 
     @staticmethod

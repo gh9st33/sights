@@ -55,8 +55,11 @@ class SIGHTSConfigNamespaceRPCInterface:
         """ Returns all the available config files
         @return [string]  array of config file names
         """
-        files = [f for f in listdir(CONFIG_DIR) if isfile(CONFIG_DIR + f) and f.endswith(CONFIG_EXT)]
-        return files
+        return [
+            f
+            for f in listdir(CONFIG_DIR)
+            if isfile(CONFIG_DIR + f) and f.endswith(CONFIG_EXT)
+        ]
 
     def setActiveConfig(self, value):
         """ Sets contents of file
@@ -131,25 +134,22 @@ class SIGHTSConfigNamespaceRPCInterface:
             # Save the previous config as a new backup
             rename(config_path, BACKUP_DIR + name + ".backup.0")
 
-            # Save new config to file
-            with open(config_path, 'w') as f:
-                f.write(value)
-            # self.logger.info("Saved existing configuration file " + config_path)
-        else:
-            # File does not exist, save new config to file
-            with open(config_path, 'w') as f:
-                f.write(value)
-            # self.logger.info("Saved new configuration file " + config_path)
+                # self.logger.info("Saved existing configuration file " + config_path)
+        # Save new config to file
+        with open(config_path, 'w') as f:
+            f.write(value)
         return True
 
     def getRevisions(self, name):
         """ Gets a lost of all revisions of a specified config file
         @return string       A list of revisions and timestamps sorted by most recent
         """
-        files = [f for f in listdir(BACKUP_DIR) if isfile(BACKUP_DIR + f) and f.startswith(name + ".backup")]
-        revisions = []
-        for f in files:
-            revisions.append((f, getmtime(BACKUP_DIR + f)))  # File name and unix timestamp (modified time)
+        files = [
+            f
+            for f in listdir(BACKUP_DIR)
+            if isfile(BACKUP_DIR + f) and f.startswith(f"{name}.backup")
+        ]
+        revisions = [(f, getmtime(BACKUP_DIR + f)) for f in files]
         return sorted(revisions)
 
     def requestRevision(self, name):
@@ -201,25 +201,20 @@ class SIGHTSConfigNamespaceRPCInterface:
         ver = pkg_resources.get_distribution("supervisor_sights_config").version
         if (dev):
             update_commands[2].append('--dev')
-        # Log output of commands to system log directory
-        f = open('/var/log/sights.update.log', 'w')
-        f.write(f"Update log for SIGHTS on {datetime.datetime.now()}\n")
-        # Run each command to perform an update
-        for command in update_commands:
-            f.write('> ' + ''.join(e + " " for e in command))
-            # Run this command, and if exit code is non-zero, consider the update failed
-            if _runCommand(f, command) != 0:
-                f.write("\nUpdate failed.")
-                f.close()
-                return False
-        f.write("\nUpdate succeeded!")
-        f.close()
+        with open('/var/log/sights.update.log', 'w') as f:
+            f.write(f"Update log for SIGHTS on {datetime.datetime.now()}\n")
+                # Run each command to perform an update
+            for command in update_commands:
+                f.write('> ' + ''.join(f"{e} " for e in command))
+                # Run this command, and if exit code is non-zero, consider the update failed
+                if _runCommand(f, command) != 0:
+                    f.write("\nUpdate failed.")
+                    f.close()
+                    return False
+            f.write("\nUpdate succeeded!")
         # Return new version number if the update requires a restart. If no restart is required, simply return true
         new_ver = pkg_resources.get_distribution("supervisor_sights_config").version
-        if ver != new_ver:
-            return new_ver
-        else:
-            return True
+        return new_ver if ver != new_ver else True
 
 
 def make_sights_config_rpcinterface(supervisord, **config):

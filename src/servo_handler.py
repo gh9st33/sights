@@ -21,7 +21,7 @@ class ServoHandler:
         self.pipe = pipe
         self.config = config
         # Create new plugin manager looking for subclasses of MotorWrapper in "src/motors/"
-        self.pm = PluginManager(ServoWrapper, os.getcwd() + "/src/servos")
+        self.pm = PluginManager(ServoWrapper, f"{os.getcwd()}/src/servos")
         # Load values from configuration file
         self.type = config['servos']['type'].lower()
         # Log loaded type
@@ -42,24 +42,25 @@ class ServoHandler:
             self.logger.warning("Falling back to virtual connection")
             self.connection = VirtualConnection(config['servos'])
             self.type = 'virtual'
-        self.logger.info(f"Debug message 3")
+        self.logger.info("Debug message 3")
         # Ensure Connection class has access to logging capabilities
         self.connection.logger = self.logger
         Servos = {}
-        self.logger.info(f"Debug message 4")
+        self.logger.info("Debug message 4")
         for servo, conf in config['servos']['instances'].items():
             if servo in config['arm'].values():
                 part = [k for k, v in config['arm'].items() if v == servo][0]
             else:
                 part = None
             Servos[int(servo)] = self.connection.create_servo_model(int(servo), conf, part)
-        self.logger.info(f"Debug message 5")
+        self.logger.info("Debug message 5")
         self.Servos = Servos
 
     def get_initial_messages(self):
-        msg = []
-        for servo in [s for s in self.Servos.values() if s.part is not None]:
-            msg.append([servo.part, servo.pos])
+        msg = [
+            [servo.part, servo.pos]
+            for servo in [s for s in self.Servos.values() if s.part is not None]
+        ]
         return {"SERVO_POS": msg}
 
     
@@ -67,7 +68,7 @@ class ServoHandler:
         self.Servos[channel].pos = pos
         self.connection.go_to(channel, pos)
         if self.Servos[channel].part is not None:
-            self.logger.debug("Sending updated servo pos of {}".format(self.Servos[channel].part))
+            self.logger.debug(f"Sending updated servo pos of {self.Servos[channel].part}")
             self.pipe.send(["SERVO_POS", self.Servos[channel].part, pos])
 
     def go_to_pos_async(self, channel, pos):

@@ -60,7 +60,7 @@ def main():
 
     while True:
         msg = getData()
-        if not msg == {}:
+        if msg != {}:
             # Get the four distances
             if reverse:
                 back = int(msg["distance"][Distance.FRONT])

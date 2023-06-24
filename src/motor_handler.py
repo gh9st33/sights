@@ -13,7 +13,7 @@ class MotorHandler:
         # Setup logger
         self.logger = logging.getLogger(__name__)
         # Create new plugin manager looking for subclasses of MotorWrapper in "src/motors/"
-        self.pm = PluginManager(MotorWrapper, os.getcwd() + "/src/motors")
+        self.pm = PluginManager(MotorWrapper, f"{os.getcwd()}/src/motors")
         # Load values from configuration file
         self.type = config['motors']['type'].lower()
         self.paddle_type = config['paddles']['type'].lower()
@@ -79,10 +79,8 @@ class MotorHandler:
                 self.connection.move_raw(left=left)
             if right != self.last_right:
                 self.connection.move_raw(right=right)
-        else:
-            # Not independent, both left and right must have changed
-            if left != self.last_left and right != self.last_right:
-                self.connection.move_raw(left, right)
+        elif left != self.last_left and right != self.last_right:
+            self.connection.move_raw(left, right)
 
         # Store this message for comparison next time
         self.last_left = left
